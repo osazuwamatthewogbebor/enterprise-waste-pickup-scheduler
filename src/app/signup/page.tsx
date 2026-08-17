@@ -206,7 +206,7 @@ export default function SignupPage() {
             </Link>
             <p>Build cleaner routines for your waste business.</p>
           </div>
-          <p className="mt-4 text-xs text-slate-400">© 2025 WastePickup. All rights reserved.</p>
+          <p className="mt-4 text-xs text-slate-400">© {new Date().getFullYear()} WastePickup. All rights reserved.</p>
         </div>
       </footer>
     </main>

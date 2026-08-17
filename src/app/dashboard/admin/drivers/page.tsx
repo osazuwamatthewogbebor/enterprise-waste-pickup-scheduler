@@ -1,6 +1,7 @@
 import { listDrivers } from "@/src/lib/actions/v1/zones";
 import { listZonesSimple } from "@/src/lib/actions/v1/zones";
 import { DriverDialog, DeleteDriverButton } from "@/src/components/admin/driver-form";
+import { BulkDriverUpload } from "@/src/components/admin/bulk-driver-upload";
 import type { Zone } from "@/src/generated/prisma/client";
 
 export default async function AdminDriversPage() {
@@ -19,6 +20,8 @@ export default async function AdminDriversPage() {
         </div>
         <DriverDialog zones={zones} />
       </div>
+
+      <BulkDriverUpload />
 
       {drivers.length === 0 ? (
         <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">

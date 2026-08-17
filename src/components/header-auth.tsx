@@ -44,35 +44,58 @@ type Align = "left" | "right";
 export function SignInDropdown({
   variant = "ghost",
   align = "right",
-  size = "w-25",
+  size = "",
+  label = "Sign in",
+  className,
 }: {
   variant?: "ghost" | "outline";
   align?: Align;
-  size?: String
+  size?: string;
+  label?: string;
+  className?: string;
 }) {
   return (
-    <Dropdown>
-      <DropdownTrigger variant={variant} size={size}>Sign in</DropdownTrigger>
+    <Dropdown className={className}>
+      <DropdownTrigger variant={variant} size={size}>
+        {label}
+      </DropdownTrigger>
       <DropdownMenu align={align}>
-        <DropdownItem href="/login?role=company" icon={companyIcon}>
-          Company sign in
-        </DropdownItem>
         <DropdownItem href="/login?role=driver" icon={driverIcon}>
           Driver sign in
+        </DropdownItem>
+        <DropdownItem href="/login?role=company" icon={companyIcon}>
+          Company sign in
         </DropdownItem>
       </DropdownMenu>
     </Dropdown>
   );
 }
 
-export function HeaderAuth() {
+const createOrgLink =
+  "w-full rounded-full bg-slate-950 px-5 py-2.5 text-center text-sm font-semibold text-white shadow-lg shadow-slate-950/10 transition hover:-translate-y-0.5 hover:bg-slate-800";
+
+export function HeaderAuth({
+  stack = false,
+  align = "right",
+}: {
+  stack?: boolean;
+  align?: Align;
+}) {
+  if (stack) {
+    return (
+      <div className="flex w-full flex-col items-stretch gap-3">
+        <SignInDropdown variant="outline" align={align} />
+        <Link href="/signup" className={createOrgLink}>
+          Create organization
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <>
-      <SignInDropdown variant="outline" />
-      <Link
-        href="/signup"
-        className="rounded-full bg-slate-950 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-slate-950/10 hover:-translate-y-0.5 hover:bg-slate-800"
-      >
+      <SignInDropdown variant="ghost" align={align} />
+      <Link href="/signup" className={createOrgLink.replace("w-full ", "")}>
         Create organization
       </Link>
     </>

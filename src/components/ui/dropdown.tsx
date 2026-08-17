@@ -34,7 +34,13 @@ function useDropdown() {
   return ctx;
 }
 
-export function Dropdown({ children }: { children: ReactNode }) {
+export function Dropdown({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -106,7 +112,7 @@ export function Dropdown({ children }: { children: ReactNode }) {
     <DropdownContext.Provider
       value={{ open, setOpen, close, triggerRef, menuRef, focusItem, menuId }}
     >
-      <div className="relative inline-flex">{children}</div>
+      <div className={`relative inline-flex ${className ?? ""}`}>{children}</div>
     </DropdownContext.Provider>
   );
 }
@@ -114,16 +120,16 @@ export function Dropdown({ children }: { children: ReactNode }) {
 export function DropdownTrigger({
   children,
   variant = "ghost",
-  size = "w-25"
+  size = "",
 }: {
   children?: ReactNode;
   variant?: "ghost" | "outline";
-  size?: String
+  size?: string;
 }) {
   const { open, setOpen, triggerRef, menuId } = useDropdown();
 
   const base =
-    "inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500";
+    "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500";
   const styles =
     variant === "outline"
       ? "border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900"
@@ -231,7 +237,7 @@ export function DropdownItem({
   };
 
   const className =
-    "flex w-full items-center gap-3 rounded-2xl px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 focus-visible:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 data-disabled:cursor-not-allowed data-disabled:opacity-50";
+    "flex w-full cursor-pointer items-center gap-3 rounded-2xl px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 focus-visible:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 data-disabled:cursor-not-allowed data-disabled:opacity-50";
 
   if (href) {
     return (

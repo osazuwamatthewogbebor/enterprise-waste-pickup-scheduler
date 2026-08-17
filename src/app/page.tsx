@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { HeaderAuth, SignInDropdown } from "@/src/components/header-auth";
+import { Header } from "@/src/components/header";
+import { SignInDropdown } from "@/src/components/header-auth";
+import { Logo } from "@/src/components/logo";
 
 const metrics = [
   { value: "186%", label: "Faster route planning" },
@@ -73,36 +75,9 @@ const featureCards = [
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-linear-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25">
-              <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </div>
-            <div>
-              <span className="block text-base font-semibold tracking-[-0.03em] text-slate-900">WastePickup</span>
-              <span className="block text-xs uppercase tracking-[0.2em] text-slate-500">Operations platform</span>
-            </div>
-          </Link>
+        <Header />
 
-          <nav className="hidden items-center gap-8 text-sm font-medium text-slate-600 md:flex">
-            <Link href="/about" className="hover:text-slate-900">About</Link>
-            <Link href="/features" className="hover:text-slate-900">Features</Link>
-            <Link href="/pricing" className="hover:text-slate-900">Pricing</Link>
-            <Link href="/careers" className="hover:text-slate-900">Careers</Link>
-            <Link href="/contact" className="hover:text-slate-900">Contact</Link>
-            <Link href="/privacy-policy" className="hover:text-slate-900">Privacy</Link>
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <HeaderAuth />
-          </div>
-        </div>
-      </header>
-
-      <main className="flex-1">
+      <main id="main-content" className="flex-1">
         <section className="relative overflow-hidden">
           <div className="absolute inset-x-0 top-0 h-130 bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.18),transparent_25%),radial-gradient(circle_at_bottom_right,rgba(16,185,129,0.12),transparent_30%)]" />
           <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-12 sm:px-6 lg:px-8 lg:pb-24 lg:pt-20">
@@ -118,14 +93,20 @@ export default function Home() {
                   Run route planning, payments, resident service requests, and field execution from one modern platform built for Nigerian waste businesses.
                 </p>
 
-                <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+                <div className="mt-8 flex w-full flex-col gap-4 sm:w-auto sm:flex-row">
                   <Link
                     href="/request"
-                    className="rounded-full bg-emerald-600 px-7 py-3.5 text-center text-base font-semibold text-white shadow-lg shadow-emerald-600/25 hover:-translate-y-0.5 hover:bg-emerald-500"
+                    className="w-full justify-center rounded-full bg-emerald-600 px-7 py-3.5 text-center text-base font-semibold text-white shadow-lg shadow-emerald-600/25 hover:-translate-y-0.5 hover:bg-emerald-500 sm:w-auto"
                   >
                     Submit a service request
                   </Link>
-                  <SignInDropdown variant="outline" align="left" size={"w-40"} />
+                  <SignInDropdown
+                    variant="outline"
+                    align="left"
+                    label="Team sign in"
+                    size="w-full sm:w-44"
+                    className="w-full sm:w-auto"
+                  />
                 </div>
 
                 <p className="mt-4 max-w-lg text-sm leading-6 text-slate-500">
@@ -310,11 +291,7 @@ export default function Home() {
           <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-5">
             <div className="lg:col-span-2">
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br from-blue-600 to-indigo-600">
-                  <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </div>
+                <Logo compact />
                 <span className="text-lg font-semibold tracking-tighter text-slate-900">WastePickup</span>
               </div>
               <p className="mt-4 max-w-sm text-sm leading-6 text-slate-600">
@@ -351,7 +328,7 @@ export default function Home() {
           </div>
 
           <div className="mt-10 border-t border-slate-200 pt-6 text-sm text-slate-500">
-            <p>© 2025 WastePickup. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} WastePickup. All rights reserved.</p>
           </div>
         </div>
       </footer>

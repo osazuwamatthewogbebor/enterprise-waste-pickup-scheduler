@@ -186,7 +186,7 @@ export default function LoginPage() {
             </Link>
             <p>Secure access for your operations team.</p>
           </div>
-          <p className="mt-4 text-xs text-slate-400">© 2025 WastePickup. All rights reserved.</p>
+          <p className="mt-4 text-xs text-slate-400">© {new Date().getFullYear()} WastePickup. All rights reserved.</p>
         </div>
       </footer>
     </main>

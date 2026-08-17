@@ -26,7 +26,7 @@ export async function importResidents(_prevState: unknown, formData: FormData): 
 
   const text = await file.text();
   const lines = text.trim().split("\n");
-  const headers = lines[0].split(",").map((h: string) => h.trim().toLowerCase());
+  const headers = lines[0].split(",").map((h: string) => h.trim());
 
   const requiredCols = ["phone", "firstName", "lastName"];
   const missing = requiredCols.filter((col) => !headers.includes(col));
