@@ -24,7 +24,10 @@ const adminLinks: NavLink[] = [
 
 const driverLinks: NavLink[] = [{ href: "/dashboard/driver/routes", label: "My Routes" }];
 
-const residentLinks: NavLink[] = [{ href: "/dashboard/resident", label: "My Account" }];
+const residentLinks: NavLink[] = [
+  { href: "/dashboard/resident", label: "My Account" },
+  { href: "/dashboard/resident/requests", label: "My Requests" },
+];
 
 const linkClass = "block rounded-xl px-3 py-2.5 text-sm font-medium transition-colors";
 

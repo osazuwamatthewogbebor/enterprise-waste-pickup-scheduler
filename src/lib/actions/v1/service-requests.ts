@@ -36,12 +36,12 @@ export async function listResidentServiceRequests(): Promise<{
     include: { resident: true },
   });
 
-  return { success: true, data: requests };
+  return { success: true, data: requests as any[] };
 }
 
 export async function getResidentServiceRequest(id: string): Promise<{
   success: boolean;
-  data?: { serviceRequest: any } | undefined;
+  data?: { serviceRequest: any };
   error?: string;
 }> {
   const user = await getSessionUser();
@@ -51,7 +51,6 @@ export async function getResidentServiceRequest(id: string): Promise<{
 
   const serviceRequest = await prisma.serviceRequest.findFirst({
     where: { id, organizationId: user.organizationId, residentId: user.id },
-    include: { resident: true },
   });
 
   if (!serviceRequest) {

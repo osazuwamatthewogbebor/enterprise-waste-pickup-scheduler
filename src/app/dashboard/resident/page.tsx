@@ -22,6 +22,14 @@ export default async function ResidentHome() {
           <p className="mt-2 text-sm text-slate-600">Create a pickup or missed collection request for your address.</p>
         </Link>
 
+        <Link
+          href="/dashboard/resident/requests"
+          className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+        >
+          <h2 className="text-lg font-semibold text-slate-900">My service requests</h2>
+          <p className="mt-2 text-sm text-slate-600">View requests you have submitted and their status.</p>
+        </Link>
+
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Billing and invoices</h2>
           <p className="mt-2 text-sm text-slate-600">View invoices, payment history, and account charges coming soon.</p>
