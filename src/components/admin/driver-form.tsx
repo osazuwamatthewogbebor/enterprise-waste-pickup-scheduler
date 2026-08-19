@@ -3,7 +3,7 @@
 import { useState, useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { createDriver, updateDriver, deleteDriver } from "@/src/lib/actions/v1/__server__/driver-actions";
+import { createDriver, updateDriver, deleteDriver, activateDriver } from "@/src/lib/actions/v1/__server__/driver-actions";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,7 @@ interface Driver {
   firstName: string | null;
   lastName: string | null;
   phone: string | null;
+  accountStatus: "CLAIMED" | "UNCLAIMED";
   zone: { id: string; name: string } | null;
 }
 
@@ -193,19 +194,20 @@ export function DriverDialog({ zones, driver, onDriverSaved }: DriverDialogProps
   );
 }
 
-export function DeleteDriverButton({ driver }: { driver: Driver }) {
-  const [state, formAction, pending] = useActionState(deleteDriver, null);
+export function DriverStatusToggle({ driver }: { driver: Driver }) {
+  const isActive = driver.accountStatus === "CLAIMED";
+  const [state, formAction, pending] = useActionState(isActive ? deleteDriver : activateDriver, null);
   const router = useRouter();
 
   useEffect(() => {
     if (state?.success) {
-      toast.success("Driver deactivated");
+      toast.success(isActive ? "Driver deactivated" : "Driver activated");
       router.refresh();
     }
     if (state?.success === false) {
       toast.error(state.error || "Something went wrong");
     }
-  }, [state, router]);
+  }, [state, isActive, router]);
 
   return (
     <form action={formAction}>
@@ -213,9 +215,13 @@ export function DeleteDriverButton({ driver }: { driver: Driver }) {
       <button
         type="submit"
         disabled={pending}
-        className="text-xs font-medium text-red-600 hover:text-red-800"
+        className={
+          isActive
+            ? "text-xs font-medium text-red-600 hover:text-red-800"
+            : "text-xs font-medium text-emerald-600 hover:text-emerald-800"
+        }
       >
-        Deactivate
+        {isActive ? "Deactivate" : "Activate"}
       </button>
     </form>
   );

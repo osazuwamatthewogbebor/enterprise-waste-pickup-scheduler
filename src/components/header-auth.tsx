@@ -60,11 +60,11 @@ export function SignInDropdown({
         {label}
       </DropdownTrigger>
       <DropdownMenu align={align}>
-        <DropdownItem href="/login?role=driver" icon={driverIcon}>
-          Driver sign in
-        </DropdownItem>
         <DropdownItem href="/login?role=company" icon={companyIcon}>
           Company sign in
+        </DropdownItem>
+        <DropdownItem href="/login?role=driver" icon={driverIcon}>
+          Driver sign in
         </DropdownItem>
       </DropdownMenu>
     </Dropdown>

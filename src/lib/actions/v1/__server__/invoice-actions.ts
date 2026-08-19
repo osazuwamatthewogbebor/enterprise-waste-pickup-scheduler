@@ -1,7 +1,7 @@
 "use server";
 
 import prisma from "@/src/lib/prisma";
-import { getSessionUser } from "@/src/lib/with-tenant";
+import { getSessionUser, requireVerifiedOrg } from "@/src/lib/with-tenant";
 import { ok, fail } from "@/src/lib/result";
 import type { ActionResult } from "@/src/lib/result";
 import { z } from "zod";
@@ -59,6 +59,13 @@ export async function initializePayment(_prevState: unknown, formData: FormData)
   const user = await getSessionUser();
   if (!user) return fail("Unauthorized");
   if (user.role !== "ADMIN") return fail("Forbidden");
+
+  const verified = await requireVerifiedOrg(user);
+  if (!verified.verified) {
+    return fail(
+      `Organization is ${verified.status.replace("_", " ").toLowerCase()}; Paystack payments are locked pending verification`
+    );
+  }
 
   const raw = {
     invoiceId: formData.get("invoiceId"),

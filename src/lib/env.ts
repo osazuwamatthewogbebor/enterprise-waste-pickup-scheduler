@@ -10,6 +10,7 @@ const envSchema = z.object({
   PAYSTACK_PUBLIC_KEY: z.string().optional(),
   NEXT_PUBLIC_MAPBOX_TOKEN: z.string().optional(),
   BLOB_READ_WRITE_TOKEN: z.string().optional(),
+  SUPER_ADMIN_EMAILS: z.string().optional(),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 });
 

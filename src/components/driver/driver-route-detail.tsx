@@ -213,7 +213,7 @@ function StopCard({
 
       {stop.status === "PENDING" && (
         <div className="mt-3 space-y-2">
-          <form action={photoAction} encType="multipart/form-data">
+          <form action={photoAction}>
             <input type="hidden" name="stopId" value={stop.id} />
             <div className="flex items-center gap-2">
               <input

@@ -9,6 +9,7 @@ export default function SignupPage() {
   const [form, setForm] = useState({
     companyName: "",
     slug: "",
+    cacNumber: "",
     fullName: "",
     email: "",
     password: "",
@@ -129,6 +130,22 @@ export default function SignupPage() {
                 required
               />
               <p className="mt-2 text-xs text-slate-500">Lowercase letters, numbers, and hyphens only</p>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">CAC number</label>
+              <input
+                type="text"
+                value={form.cacNumber}
+                onChange={(e) => setForm({ ...form, cacNumber: e.target.value })}
+                className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                placeholder="RC 123456"
+                required
+              />
+              <p className="mt-2 text-xs text-slate-500">
+                Your organization will be created in pending verification. A platform administrator will verify your CAC
+                before live route dispatches and billing are enabled.
+              </p>
             </div>
 
             <div>

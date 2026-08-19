@@ -6,10 +6,10 @@ import { fail, ok } from "@/src/lib/result";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { companyName, slug, fullName, email, password } = body;
+    const { companyName, slug, fullName, email, password, cacNumber } = body;
 
-    if (!companyName || !slug || !fullName || !email || !password) {
-      return NextResponse.json(fail("All fields are required"), { status: 400 });
+    if (!companyName || !slug || !fullName || !email || !password || !cacNumber) {
+      return NextResponse.json(fail("All fields including CAC number are required"), { status: 400 });
     }
 
     const existing = await prisma.organization.findUnique({
@@ -21,7 +21,12 @@ export async function POST(request: Request) {
     }
 
     const org = await prisma.organization.create({
-      data: { name: companyName, slug },
+      data: {
+        name: companyName,
+        slug,
+        cacNumber,
+        verificationStatus: "PENDING_VERIFICATION",
+      },
     });
 
     const passwordHash = await bcrypt.hash(password, 10);

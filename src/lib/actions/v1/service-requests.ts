@@ -19,3 +19,44 @@ export async function listServiceRequests(): Promise<{
 
   return { success: true, data: requests };
 }
+
+export async function listResidentServiceRequests(): Promise<{
+  success: boolean;
+  data?: any[];
+  error?: string;
+}> {
+  const user = await getSessionUser();
+  if (!user || user.role !== "RESIDENT") {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  const requests = await prisma.serviceRequest.findMany({
+    where: { organizationId: user.organizationId, residentId: user.id },
+    orderBy: { createdAt: "desc" },
+    include: { resident: true },
+  });
+
+  return { success: true, data: requests };
+}
+
+export async function getResidentServiceRequest(id: string): Promise<{
+  success: boolean;
+  data?: { serviceRequest: any } | undefined;
+  error?: string;
+}> {
+  const user = await getSessionUser();
+  if (!user || user.role !== "RESIDENT") {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  const serviceRequest = await prisma.serviceRequest.findFirst({
+    where: { id, organizationId: user.organizationId, residentId: user.id },
+    include: { resident: true },
+  });
+
+  if (!serviceRequest) {
+    return { success: false, error: "Service request not found" };
+  }
+
+  return { success: true, data: { serviceRequest } };
+}

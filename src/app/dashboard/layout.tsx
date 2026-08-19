@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getSessionUser } from "@/src/lib/with-tenant";
+import { getSessionUser, requireVerifiedOrg, isSuperAdmin } from "@/src/lib/with-tenant";
 import { DashboardShell } from "@/src/components/dashboard-shell";
 
 export default async function DashboardLayout({
@@ -13,14 +13,19 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
+  const verified = await requireVerifiedOrg(user);
+  const superAdmin = await isSuperAdmin();
+
   return (
     <DashboardShell
       user={{
         name: null,
-        email: null,
+        email: user.email,
         role: user.role,
         orgSlug: user.orgSlug,
       }}
+      orgStatus={verified.status}
+      isSuperAdmin={superAdmin}
     >
       {children}
     </DashboardShell>

@@ -6,6 +6,7 @@ import { ok, fail } from "@/src/lib/result";
 import type { ActionResult } from "@/src/lib/result";
 import { normalizeNigerianPhone, isValidNigerianPhone } from "@/src/lib/phone";
 import bcrypt from "bcrypt";
+import { generateTempPassword } from "@/src/lib/password";
 import { z } from "zod";
 
 const createDriverSchema = z.object({
@@ -131,7 +132,30 @@ export async function deleteDriver(_prevState: unknown, formData: FormData): Pro
     data: { accountStatus: "UNCLAIMED" },
   });
 
-  return ok({ deleted: true });
+  return ok({ updated: true });
+}
+
+export async function activateDriver(_prevState: unknown, formData: FormData): Promise<ActionResult<any>> {
+  const user = await getSessionUser();
+  if (!user) return fail("Unauthorized");
+  if (user.role !== "ADMIN") return fail("Forbidden");
+
+  const driverId = formData.get("driverId") as string;
+  if (!driverId) return fail("Driver ID is required");
+
+  const driver = await prisma.user.findFirst({
+    where: { id: driverId, organizationId: user.organizationId, role: "DRIVER" },
+    select: { id: true },
+  });
+
+  if (!driver) return fail("Driver not found");
+
+  await prisma.user.update({
+    where: { id: driverId },
+    data: { accountStatus: "CLAIMED" },
+  });
+
+  return ok({ updated: true });
 }
 
 const driverRowSchema = z.object({
@@ -236,4 +260,98 @@ export async function importDrivers(_prevState: unknown, formData: FormData): Pr
   }
 
   return ok(results);
+}
+
+const bulkDriverActionSchema = z.object({
+  ids: z.string(),
+  action: z.enum(["deactivate", "activate", "assignZone"]),
+  zoneId: z.string().optional(),
+});
+
+export async function bulkDriverAction(_prevState: unknown, formData: FormData): Promise<ActionResult<any>> {
+  const user = await getSessionUser();
+  if (!user) return fail("Unauthorized");
+  if (user.role !== "ADMIN") return fail("Forbidden");
+
+  const parsed = bulkDriverActionSchema.safeParse({
+    ids: formData.get("ids"),
+    action: formData.get("action"),
+    zoneId: (formData.get("zoneId") as string) || undefined,
+  });
+  if (!parsed.success) return fail("Invalid input");
+
+  let ids: string[];
+  try {
+    ids = JSON.parse(parsed.data.ids);
+  } catch {
+    return fail("Invalid selection");
+  }
+  if (!Array.isArray(ids) || ids.length === 0) return fail("No drivers selected");
+
+  const valid = await prisma.user.findMany({
+    where: { id: { in: ids }, organizationId: user.organizationId, role: "DRIVER" },
+    select: { id: true },
+  });
+  const validIds = valid.map((d) => d.id);
+
+  switch (parsed.data.action) {
+    case "deactivate":
+      await prisma.user.updateMany({
+        where: { id: { in: validIds } },
+        data: { accountStatus: "UNCLAIMED" },
+      });
+      return ok({ updated: validIds.length });
+
+    case "activate":
+      await prisma.user.updateMany({
+        where: { id: { in: validIds } },
+        data: { accountStatus: "CLAIMED" },
+      });
+      return ok({ updated: validIds.length });
+
+    case "assignZone": {
+      if (!parsed.data.zoneId) return fail("Zone is required");
+      const zone = await prisma.zone.findFirst({
+        where: { id: parsed.data.zoneId, organizationId: user.organizationId },
+        select: { id: true },
+      });
+      if (!zone) return fail("Zone not found");
+      await prisma.user.updateMany({
+        where: { id: { in: validIds } },
+        data: { zoneId: zone.id },
+      });
+      return ok({ updated: validIds.length });
+    }
+
+    default:
+      return fail("Unknown action");
+  }
+}
+
+const regenerateDriverPasswordSchema = z.object({ userId: z.string() });
+
+export async function regenerateDriverPassword(
+  _prevState: unknown,
+  formData: FormData
+): Promise<ActionResult<{ phone: string | null; password: string }>> {
+  const user = await getSessionUser();
+  if (!user) return fail("Unauthorized");
+  if (user.role !== "ADMIN") return fail("Forbidden");
+
+  const parsed = regenerateDriverPasswordSchema.safeParse({ userId: formData.get("userId") });
+  if (!parsed.success) return fail("Invalid input");
+
+  const driver = await prisma.user.findFirst({
+    where: { id: parsed.data.userId, organizationId: user.organizationId, role: "DRIVER" },
+    select: { id: true, phone: true },
+  });
+  if (!driver) return fail("Driver not found");
+
+  const password = generateTempPassword();
+  await prisma.user.update({
+    where: { id: driver.id },
+    data: { passwordHash: await bcrypt.hash(password, 10) },
+  });
+
+  return ok({ phone: driver.phone, password });
 }

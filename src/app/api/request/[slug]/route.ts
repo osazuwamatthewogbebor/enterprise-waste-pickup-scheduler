@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getOrganizationBySlug } from "@/src/lib/with-tenant";
+import { getOrganizationBySlug, normalizeOrgStatus } from "@/src/lib/with-tenant";
 import { normalizeNigerianPhone, isValidNigerianPhone } from "@/src/lib/phone";
 import { phoneRateLimiter, ipRateLimiter } from "@/src/lib/rate-limit";
 import prisma from "@/src/lib/prisma";
@@ -35,6 +35,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     const org = await getOrganizationBySlug(slug);
     if (!org) {
       return NextResponse.json(fail("Organization not found"), { status: 404 });
+    }
+
+    const orgStatus = normalizeOrgStatus(org.verificationStatus);
+    if (orgStatus !== "VERIFIED") {
+      return NextResponse.json(
+        fail(
+          `Organization is ${orgStatus.replace("_", " ").toLowerCase()}; service requests are locked pending verification`
+        ),
+        { status: 403 }
+      );
     }
 
     let normalizedPhone: string;

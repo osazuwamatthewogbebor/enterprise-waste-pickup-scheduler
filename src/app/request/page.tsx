@@ -17,7 +17,7 @@ export default function RequestLandingPage() {
     }
 
     setError("");
-    router.push(`/request/${slug.trim().toLowerCase()}`);
+    router.push(`/${slug.trim().toLowerCase()}/login`);
   }
 
   return (
@@ -26,14 +26,14 @@ export default function RequestLandingPage() {
         <div className="rounded-4xl border border-slate-200 bg-white p-10 shadow-lg shadow-slate-200/40">
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">
-              Resident request
+              Resident sign in
             </p>
             <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950">
-              Submit your service request
+              Enter your organization slug to access your resident portal.
             </h1>
             <p className="mt-4 text-base leading-7 text-slate-600">
-              Residents can submit pickup, missed collection, or bulk skip requests
-              without logging in. Enter your organization slug to continue.
+              Residents and property managers enter the organization slug assigned by their
+              provider, then sign in with their phone number and password to manage pickups.
             </p>
           </div>
 
@@ -65,7 +65,7 @@ export default function RequestLandingPage() {
               type="submit"
               className="inline-flex w-full rounded-full bg-emerald-600 px-6 py-3 text-center text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 hover:-translate-y-0.5 hover:bg-emerald-500 sm:w-auto"
             >
-              Continue to request form
+                Continue to sign in
             </button>
           </form>
         </div>

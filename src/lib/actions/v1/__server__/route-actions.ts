@@ -1,10 +1,11 @@
 "use server";
 
 import prisma from "@/src/lib/prisma";
-import { getSessionUser } from "@/src/lib/with-tenant";
+import { getSessionUser, requireVerifiedOrg } from "@/src/lib/with-tenant";
 import { ok, fail } from "@/src/lib/result";
 import type { ActionResult } from "@/src/lib/result";
 import { z } from "zod";
+import { geocodeAddress } from "@/src/lib/geocode";
 
 const createRouteSchema = z.object({
   name: z.string().min(1, "Route name is required"),
@@ -22,6 +23,13 @@ export async function createRoute(_prevState: unknown, formData: FormData): Prom
   const user = await getSessionUser();
   if (!user) return fail("Unauthorized");
   if (user.role !== "ADMIN") return fail("Forbidden");
+
+  const verified = await requireVerifiedOrg(user);
+  if (!verified.verified) {
+    return fail(
+      `Organization is ${verified.status.replace("_", " ").toLowerCase()}; live route dispatches are locked pending verification`
+    );
+  }
 
   const raw = {
     name: formData.get("name"),
@@ -51,12 +59,23 @@ export async function createRoute(_prevState: unknown, formData: FormData): Prom
 
   const routeDate = new Date(parsed.data.date);
 
-  const route = await prisma.$transaction(async (tx) => {
-    const residents = await tx.user.findMany({
-      where: { zoneId: parsed.data.zoneId, organizationId: user.organizationId, role: "RESIDENT" },
-      select: { id: true, streetAddress: true, landmark: true, latitude: true, longitude: true },
-    });
+  const residents = await prisma.user.findMany({
+    where: { zoneId: parsed.data.zoneId, organizationId: user.organizationId, role: "RESIDENT" },
+    select: { id: true, streetAddress: true, landmark: true, latitude: true, longitude: true },
+  });
 
+  const enriched = await Promise.all(
+    residents.map(async (resident) => {
+      if (resident.latitude && resident.longitude) {
+        return { residentId: resident.id, address: resident.streetAddress || resident.landmark || "Unknown address", latitude: resident.latitude, longitude: resident.longitude };
+      }
+      const address = resident.streetAddress || resident.landmark || "Unknown address";
+      const coords = await geocodeAddress(address);
+      return { residentId: resident.id, address, latitude: coords?.latitude ?? null, longitude: coords?.longitude ?? null };
+    })
+  );
+
+  const route = await prisma.$transaction(async (tx) => {
     const newRoute = await tx.route.create({
       data: {
         organizationId: user.organizationId,
@@ -67,24 +86,22 @@ export async function createRoute(_prevState: unknown, formData: FormData): Prom
       },
     });
 
-    if (residents.length > 0) {
-      const stopData = residents.map((resident: { id: string; streetAddress: string | null; landmark: string | null; latitude: number | null; longitude: number | null }) => ({
-        routeId: newRoute.id,
-        residentId: resident.id,
-        organizationId: user.organizationId,
-        zoneId: parsed.data.zoneId,
-        address: resident.streetAddress || resident.landmark || "Unknown address",
-        latitude: resident.latitude,
-        longitude: resident.longitude,
-        stopOrder: 0,
-        status: "PENDING" as const,
-        note: null,
-        photoUrl: null,
-        needsReview: false,
-      }));
-
+    if (enriched.length > 0) {
       await tx.pickupStop.createMany({
-        data: stopData,
+        data: enriched.map((e) => ({
+          routeId: newRoute.id,
+          residentId: e.residentId,
+          organizationId: user.organizationId,
+          zoneId: parsed.data.zoneId,
+          address: e.address,
+          latitude: e.latitude,
+          longitude: e.longitude,
+          stopOrder: 0,
+          status: "PENDING" as const,
+          note: null,
+          photoUrl: null,
+          needsReview: false,
+        })),
       });
     }
 

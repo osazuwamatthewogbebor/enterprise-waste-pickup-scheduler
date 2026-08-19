@@ -98,7 +98,7 @@ export default function Home() {
                     href="/request"
                     className="w-full justify-center rounded-full bg-emerald-600 px-7 py-3.5 text-center text-base font-semibold text-white shadow-lg shadow-emerald-600/25 hover:-translate-y-0.5 hover:bg-emerald-500 sm:w-auto"
                   >
-                    Submit a service request
+                    Resident sign in
                   </Link>
                   <SignInDropdown
                     variant="outline"
