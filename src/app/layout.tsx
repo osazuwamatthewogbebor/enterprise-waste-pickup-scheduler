@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, Inter } from "next/font/google";
 import "./globals.css";
-import "leaflet/dist/leaflet.css";
 import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });

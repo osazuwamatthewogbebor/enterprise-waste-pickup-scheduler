@@ -46,6 +46,7 @@ function pinElement(status: StopStatus, order: number): HTMLElement {
 export function DriverMap({ stops }: { stops: Stop[] }) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -53,8 +54,9 @@ export function DriverMap({ stops }: { stops: Stop[] }) {
     let map: any;
     let cancelled = false;
 
-    import("leaflet")
-      .then((mod) => {
+    const initMap = async () => {
+      try {
+        const mod = await import("leaflet");
         if (cancelled) return;
         const L: any = (mod as any).default ?? (mod as any);
 
@@ -69,10 +71,11 @@ export function DriverMap({ stops }: { stops: Stop[] }) {
           zoomControl: true,
         });
 
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
           attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          maxZoom: 19,
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          subdomains: "abcd",
+          maxZoom: 20,
         }).addTo(map);
 
         stops.forEach((stop) => {
@@ -86,16 +89,29 @@ export function DriverMap({ stops }: { stops: Stop[] }) {
           L.marker([stop.latitude, stop.longitude], { icon }).addTo(map);
         });
 
-        const handle = window.setTimeout(() => map.invalidateSize(), 100);
-        return () => window.clearTimeout(handle);
-      })
-      .catch(() => {
-        if (!cancelled) setError(true);
-      });
+        requestAnimationFrame(() => {
+          if (!cancelled && map) {
+            map.invalidateSize();
+          }
+        });
+
+        setLoading(false);
+      } catch {
+        if (!cancelled) {
+          setError(true);
+          setLoading(false);
+        }
+      }
+    };
+
+    initMap();
 
     return () => {
       cancelled = true;
-      if (map) map.remove();
+      if (map) {
+        map.remove();
+        map = undefined;
+      }
     };
   }, [stops]);
 
@@ -107,5 +123,14 @@ export function DriverMap({ stops }: { stops: Stop[] }) {
     );
   }
 
-  return <div ref={mapContainer} className="h-64 w-full rounded-xl border border-slate-200" />;
+  return (
+    <div className="relative h-64 w-full overflow-hidden rounded-xl border border-slate-200">
+      <div ref={mapContainer} className="h-full w-full" />
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-50">
+          <p className="text-sm text-slate-500">Loading map...</p>
+        </div>
+      )}
+    </div>
+  );
 }
