@@ -1,7 +1,13 @@
+import { redirect } from "next/navigation";
+import { getSessionUser } from "@/src/lib/with-tenant";
 import { getRouteDetail } from "@/src/lib/actions/v1/routes";
 import { DriverRouteDetail } from "@/src/components/driver/driver-route-detail";
 
 export default async function DriverRouteDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const user = await getSessionUser();
+  if (!user) redirect("/login");
+  if (user.role !== "DRIVER") redirect("/dashboard");
+
   const { id } = await params;
   const result = await getRouteDetail(id);
 

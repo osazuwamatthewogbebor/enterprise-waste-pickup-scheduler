@@ -24,7 +24,7 @@ export default async function DashboardHome() {
   }
 
   if (user.role === "RESIDENT") {
-    redirect("/dashboard/resident");
+    redirect(`/${user.orgSlug}/portal`);
   }
 
   const analyticsResult = await getAnalyticsSummary();

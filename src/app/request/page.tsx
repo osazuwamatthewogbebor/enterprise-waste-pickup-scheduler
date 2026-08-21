@@ -32,8 +32,8 @@ export default function RequestLandingPage() {
               Enter your organization slug to access your resident portal.
             </h1>
             <p className="mt-4 text-base leading-7 text-slate-600">
-              Residents and property managers enter the organization slug assigned by their
-              provider, then sign in with their phone number and password to manage pickups.
+              Residents enter the organization slug assigned by their provider, then sign in
+              with their phone number and password to manage pickups and service requests.
             </p>
           </div>
 
@@ -65,7 +65,7 @@ export default function RequestLandingPage() {
               type="submit"
               className="inline-flex w-full rounded-full bg-emerald-600 px-6 py-3 text-center text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 hover:-translate-y-0.5 hover:bg-emerald-500 sm:w-auto"
             >
-                Continue to sign in
+              Continue to sign in
             </button>
           </form>
         </div>

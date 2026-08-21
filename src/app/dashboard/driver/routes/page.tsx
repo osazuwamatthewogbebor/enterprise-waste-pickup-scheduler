@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { getSessionUser } from "@/src/lib/with-tenant";
 import Link from "next/link";
 import { listDriverRoutes } from "@/src/lib/actions/v1/routes";
 
@@ -12,6 +14,10 @@ interface DriverRoute {
 }
 
 export default async function DriverRoutesPage() {
+  const user = await getSessionUser();
+  if (!user) redirect("/login");
+  if (user.role !== "DRIVER") redirect("/dashboard");
+
   const result = await listDriverRoutes();
   const routes = result.success ? (result.data as unknown as DriverRoute[]) : [];
 

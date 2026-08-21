@@ -1,7 +1,13 @@
+import { redirect } from "next/navigation";
+import { getSessionUser } from "@/src/lib/with-tenant";
 import { getRouteDetail } from "@/src/lib/actions/v1/routes";
 import { RouteDetail } from "@/src/components/admin/route-detail";
 
 export default async function AdminRouteDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const user = await getSessionUser();
+  if (!user) redirect("/login");
+  if (user.role !== "ADMIN") redirect("/dashboard");
+
   const { id } = await params;
   const result = await getRouteDetail(id);
 

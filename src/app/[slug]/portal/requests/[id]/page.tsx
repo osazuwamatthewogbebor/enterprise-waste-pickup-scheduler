@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { getSessionUser } from "@/src/lib/with-tenant";
+import Link from "next/link";
 import { getResidentServiceRequest } from "@/src/lib/actions/v1/service-requests";
 
 interface ServiceRequestDetail {
@@ -54,13 +53,10 @@ function statusBadge(status: string) {
 export default async function ResidentRequestDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string; id: string }>;
 }) {
-  const user = await getSessionUser();
-  if (!user) redirect("/login");
-  if (user.role !== "RESIDENT") redirect("/dashboard");
+  const { slug, id } = await params;
 
-  const { id } = await params;
   const result = await getResidentServiceRequest(id);
 
   if (!result.success) {
@@ -77,7 +73,13 @@ export default async function ResidentRequestDetailPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Request #{sr.id.slice(-6)}</h1>
+          <Link
+            href={`/${slug}/portal/requests`}
+            className="text-sm font-medium text-blue-600 hover:text-blue-800"
+          >
+            &larr; Back to requests
+          </Link>
+          <h1 className="mt-2 text-2xl font-semibold text-slate-900">Request #{sr.id.slice(-6)}</h1>
           <p className="mt-1 text-sm text-slate-600">
             {TYPE_LABEL[sr.type] ?? sr.type} · Submitted on {formatDate(sr.createdAt)}
           </p>

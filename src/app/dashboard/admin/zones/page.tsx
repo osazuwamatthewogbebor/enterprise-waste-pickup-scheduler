@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { getSessionUser } from "@/src/lib/with-tenant";
 import { listZones } from "@/src/lib/actions/v1/zones";
 import { ZoneDialog } from "@/src/components/admin/zone-form";
 
@@ -10,6 +12,10 @@ interface ZoneWithCount {
 }
 
 export default async function AdminZonesPage() {
+  const user = await getSessionUser();
+  if (!user) redirect("/login");
+  if (user.role !== "ADMIN") redirect("/dashboard");
+
   const result = await listZones();
   const zones: ZoneWithCount[] = result.success ? (result.data as ZoneWithCount[]) : [];
 

@@ -110,9 +110,8 @@ export default function Home() {
                 </div>
 
                 <p className="mt-4 max-w-lg text-sm leading-6 text-slate-500">
-                  Residents and property managers can report missed pickups or
-                  schedule a stop without an account. Drivers and company admins
-                  sign in with their assigned phone number or email.
+                  Residents sign in with their organization to manage pickups and service requests.
+                  Drivers and company admins sign in with their assigned phone number or email.
                 </p>
 
                 <div className="mt-8 flex flex-wrap items-center gap-6 text-sm font-medium text-slate-600">

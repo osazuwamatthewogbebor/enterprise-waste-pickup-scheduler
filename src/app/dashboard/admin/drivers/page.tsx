@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { getSessionUser } from "@/src/lib/with-tenant";
 import { listDrivers } from "@/src/lib/actions/v1/zones";
 import { listZonesSimple } from "@/src/lib/actions/v1/zones";
 import { DriverDialog } from "@/src/components/admin/driver-form";
@@ -15,6 +17,10 @@ interface Driver {
 }
 
 export default async function AdminDriversPage() {
+  const user = await getSessionUser();
+  if (!user) redirect("/login");
+  if (user.role !== "ADMIN") redirect("/dashboard");
+
   const result = await listDrivers();
   const drivers: Driver[] = result.success ? (result.data as unknown as Driver[]) : [];
 

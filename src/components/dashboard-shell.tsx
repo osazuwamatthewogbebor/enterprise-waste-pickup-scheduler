@@ -24,11 +24,6 @@ const adminLinks: NavLink[] = [
 
 const driverLinks: NavLink[] = [{ href: "/dashboard/driver/routes", label: "My Routes" }];
 
-const residentLinks: NavLink[] = [
-  { href: "/dashboard/resident", label: "My Account" },
-  { href: "/dashboard/resident/requests", label: "My Requests" },
-];
-
 const linkClass = "block rounded-xl px-3 py-2.5 text-sm font-medium transition-colors";
 
 function DashboardSidebar({
@@ -118,7 +113,11 @@ export function DashboardShell({
 
   const isAdmin = user.role === "ADMIN";
   const isDriver = user.role === "DRIVER";
-  let links = isAdmin ? adminLinks : isDriver ? driverLinks : residentLinks;
+  let links = isAdmin ? adminLinks : isDriver ? driverLinks : [
+    { href: `/${user.orgSlug}/portal/requests`, label: "My Requests" },
+    { href: `/${user.orgSlug}/portal/new`, label: "New Request" },
+    { href: `/${user.orgSlug}/portal/pickups`, label: "Upcoming Pickups" },
+  ];
   if (isSuperAdmin) {
     links = [...links, { href: "/dashboard/admin/psps", label: "PSPs" }];
   }

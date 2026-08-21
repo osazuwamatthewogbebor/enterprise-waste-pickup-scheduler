@@ -1,9 +1,15 @@
+import { redirect } from "next/navigation";
+import { getSessionUser } from "@/src/lib/with-tenant";
 import { listInvoices } from "@/src/lib/actions/v1/invoices";
 import { listResidents } from "@/src/lib/actions/v1/residents";
 import { InvoiceDialog } from "@/src/components/admin/invoice-form";
 import { PaystackPaymentDialog } from "@/src/components/admin/paystack-payment-dialog";
 
 export default async function AdminInvoicesPage() {
+  const user = await getSessionUser();
+  if (!user) redirect("/login");
+  if (user.role !== "ADMIN") redirect("/dashboard");
+
   const invResult = await listInvoices();
   const resResult = await listResidents();
   const invoices = invResult.success ? invResult.data! : [];

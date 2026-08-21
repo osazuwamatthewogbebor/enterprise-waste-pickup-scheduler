@@ -9,6 +9,14 @@ const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" });
 export const metadata: Metadata = {
   title: "Waste Pickup Scheduler",
   description: "B2B2C waste management operations platform",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/favicon-32.png",
+  },
 };
 
 export const viewport: Viewport = {

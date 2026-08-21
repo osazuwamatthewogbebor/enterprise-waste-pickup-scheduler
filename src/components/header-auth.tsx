@@ -48,7 +48,7 @@ export function SignInDropdown({
   label = "Sign in",
   className,
 }: {
-  variant?: "ghost" | "outline";
+  variant?: "ghost" | "outline" | "solid";
   align?: Align;
   size?: string;
   label?: string;

@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { use, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import Link from "next/link";
 
 const REQUEST_TYPES = [
   { value: "BULK_SKIP", label: "Bulk skip" },
@@ -9,20 +11,8 @@ const REQUEST_TYPES = [
   { value: "MISSED_PICKUP", label: "Missed pickup" },
 ];
 
-interface Stop {
-  id: string;
-  address: string;
-  status: string;
-  route: {
-    id: string;
-    name: string;
-    date: Date;
-    status: string;
-    driver: { firstName: string | null; lastName: string | null } | null;
-  } | null;
-}
-
-export default function ResidentPortalView({ slug, stops }: { slug: string; stops: Stop[] }) {
+export default function ResidentPortalNewRequestPage({ params }: { params: Promise<{ slug: string }> }) {
+  const slug = use(params).slug;
   const [form, setForm] = useState({
     type: "BULK_SKIP",
     address: "",
@@ -30,6 +20,7 @@ export default function ResidentPortalView({ slug, stops }: { slug: string; stop
     notes: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -48,58 +39,29 @@ export default function ResidentPortalView({ slug, stops }: { slug: string; stop
       }
       toast.success("Request submitted successfully");
       setForm({ type: "BULK_SKIP", address: "", preferredDate: "", notes: "" });
+      router.push(`/${slug}/portal/requests`);
     } catch {
       toast.error("Something went wrong");
-      setSubmitting(false);
     } finally {
       setSubmitting(false);
     }
   }
 
-  const upcoming = [...stops].sort(
-    (a, b) =>
-      (a.route ? new Date(a.route.date).getTime() : 0) -
-      (b.route ? new Date(b.route.date).getTime() : 0)
-  );
-
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">My pickup portal</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Your scheduled pickups and service requests for <strong>{slug}</strong>.
-        </p>
+        <Link
+          href={`/${slug}/portal/requests`}
+          className="text-sm font-medium text-blue-600 hover:text-blue-800"
+        >
+          &larr; Back to requests
+        </Link>
+        <h1 className="mt-2 text-2xl font-semibold text-slate-900">New service request</h1>
+        <p className="mt-1 text-sm text-slate-600">Submit a pickup or missed collection request.</p>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6">
-        <h2 className="mb-3 text-sm font-medium text-slate-500 uppercase">Upcoming pickups</h2>
-        {upcoming.length === 0 ? (
-          <p className="text-sm text-slate-500">No scheduled pickups yet.</p>
-        ) : (
-          <ul className="divide-y divide-slate-200">
-            {upcoming.map((stop) => (
-              <li key={stop.id} className="py-3">
-                <p className="text-sm font-medium text-slate-900">{stop.address}</p>
-                <p className="text-xs text-slate-500">
-                  {stop.route ? (
-                    <>
-                      Route: {stop.route.name} · {new Date(stop.route.date).toLocaleDateString("en-NG")} · Status:{" "}
-                      {stop.route.status} · Driver:{" "}
-                      {stop.route.driver ? `${stop.route.driver.firstName ?? ""} ${stop.route.driver.lastName ?? ""}`.trim() : "—"}
-                    </>
-                  ) : (
-                    "Unassigned route"
-                  )}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      <div className="rounded-xl border border-slate-200 bg-white p-6">
-        <h2 className="mb-3 text-sm font-medium text-slate-500 uppercase">Submit a service request</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">Request type</label>
             <select
@@ -154,8 +116,8 @@ export default function ResidentPortalView({ slug, stops }: { slug: string; stop
           >
             {submitting ? "Submitting..." : "Submit request"}
           </button>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
   );
 }

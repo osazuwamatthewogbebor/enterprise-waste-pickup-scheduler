@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { getSessionUser } from "@/src/lib/with-tenant";
 import Link from "next/link";
 import { listRoutes } from "@/src/lib/actions/v1/routes";
 import { listZonesSimple } from "@/src/lib/actions/v1/zones";
@@ -15,6 +17,10 @@ interface RouteRow {
 }
 
 export default async function AdminRoutesPage() {
+  const user = await getSessionUser();
+  if (!user) redirect("/login");
+  if (user.role !== "ADMIN") redirect("/dashboard");
+
   const result = await listRoutes();
   const routes = result.success ? (result.data as unknown as RouteRow[]) : [];
 

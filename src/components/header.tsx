@@ -9,7 +9,6 @@ const navItems = [
   { label: "Features", href: "/features" },
   { label: "Pricing", href: "/pricing" },
   { label: "Careers", href: "/careers" },
-  { label: "Submit a service request", href: "/request" },
 ];
 
 const linkClass =

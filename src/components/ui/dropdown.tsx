@@ -123,7 +123,7 @@ export function DropdownTrigger({
   size = "",
 }: {
   children?: ReactNode;
-  variant?: "ghost" | "outline";
+  variant?: "ghost" | "outline" | "solid";
   size?: string;
 }) {
   const { open, setOpen, triggerRef, menuId } = useDropdown();
@@ -133,6 +133,8 @@ export function DropdownTrigger({
   const styles =
     variant === "outline"
       ? "border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+      : variant === "solid"
+      ? "bg-emerald-600 text-white hover:bg-emerald-700"
       : "text-slate-700 hover:bg-slate-100 hover:text-slate-900";
 
   return (

@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { getSessionUser } from "@/src/lib/with-tenant";
 import { listResidents } from "@/src/lib/actions/v1/residents";
 import { listZonesSimple } from "@/src/lib/actions/v1/zones";
 import { CsvImportForm } from "@/src/components/admin/csv-import-form";
@@ -17,6 +19,10 @@ interface Resident {
 }
 
 export default async function AdminResidentsPage() {
+  const user = await getSessionUser();
+  if (!user) redirect("/login");
+  if (user.role !== "ADMIN") redirect("/dashboard");
+
   const result = await listResidents();
   const residents: Resident[] = result.success ? (result.data as unknown as Resident[]) : [];
 

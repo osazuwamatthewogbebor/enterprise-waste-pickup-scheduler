@@ -1,8 +1,14 @@
+import { redirect } from "next/navigation";
+import { getSessionUser } from "@/src/lib/with-tenant";
 import { listServiceRequests } from "@/src/lib/actions/v1/service-requests";
 import { transitionServiceRequest } from "@/src/lib/actions/v1/__server__/service-request-actions";
 import { ServiceRequestTable } from "@/src/components/admin/service-request-table";
 
 export default async function AdminServiceRequestsPage() {
+  const user = await getSessionUser();
+  if (!user) redirect("/login");
+  if (user.role !== "ADMIN") redirect("/dashboard");
+
   const result = await listServiceRequests();
   const requests = result.success ? result.data! : [];
 
