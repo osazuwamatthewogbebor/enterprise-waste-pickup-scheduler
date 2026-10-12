@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "@/src/components/logo";
 
@@ -37,7 +37,6 @@ function DashboardSidebar({
   user: { name: string | null; email: string | null };
   onNavigate: () => void;
 }) {
-  const router = useRouter();
   return (
     <>
       <div className="flex h-20 items-center gap-3 border-b border-slate-800/80 px-5">
@@ -79,9 +78,12 @@ function DashboardSidebar({
           </div>
         </div>
         <button
-          onClick={() => {
-            document.cookie = "auth-token=; path=/; max-age=0";
-            router.push("/login");
+          onClick={async () => {
+            try {
+              await fetch("/api/auth/logout", { method: "POST" });
+            } finally {
+              window.location.replace("/login");
+            }
           }}
           className="mt-3 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-medium text-slate-300 hover:border-slate-500 hover:text-white"
         >

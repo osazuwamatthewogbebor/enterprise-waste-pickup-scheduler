@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "@/src/components/logo";
 
@@ -31,7 +31,6 @@ function SidebarNav({
   onNavigate: () => void;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
 
   const segments = pathname.split("/");
   const currentTab = segments[segments.length - 1] || "requests";
@@ -87,9 +86,12 @@ function SidebarNav({
           </div>
         </div>
         <button
-          onClick={() => {
-            document.cookie = "auth-token=; path=/; max-age=0";
-            router.push("/login");
+          onClick={async () => {
+            try {
+              await fetch("/api/auth/logout", { method: "POST" });
+            } finally {
+              window.location.replace(`/${slug}/portal/login`);
+            }
           }}
           className="mt-3 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-medium text-slate-300 hover:border-slate-500 hover:text-white"
         >

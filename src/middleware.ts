@@ -63,7 +63,9 @@ export default async function middleware(req: NextRequest) {
 
   const token = req.cookies.get("auth-token")?.value;
   if (!token) {
-    return NextResponse.redirect(new URL("/login", req.url));
+    const redirectRes = NextResponse.redirect(new URL("/login", req.url));
+    redirectRes.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+    return redirectRes;
   }
 
   let decoded: { role?: string; orgSlug?: string } | null = null;
@@ -71,14 +73,22 @@ export default async function middleware(req: NextRequest) {
     const { payload } = await jwtVerify(token, new TextEncoder().encode(AUTH_SECRET));
     decoded = { role: payload.role as string, orgSlug: payload.orgSlug as string };
   } catch {
-    return NextResponse.redirect(new URL("/login", req.url));
+    const redirectRes = NextResponse.redirect(new URL("/login", req.url));
+    redirectRes.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+    return redirectRes;
   }
 
   if (decoded.role !== requiredRole) {
     const url = req.nextUrl.clone();
     url.pathname = redirectToRoleDashboard(decoded.role || "", decoded.orgSlug);
-    return NextResponse.redirect(url);
+    const redirectRes = NextResponse.redirect(url);
+    redirectRes.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+    return redirectRes;
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+  response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  response.headers.set("Pragma", "no-cache");
+  response.headers.set("Expires", "0");
+  return response;
 }
