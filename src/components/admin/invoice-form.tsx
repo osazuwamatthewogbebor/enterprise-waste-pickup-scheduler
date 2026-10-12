@@ -37,7 +37,6 @@ export function InvoiceDialog({ residents }: { residents: User[] }) {
   }, [state, router]);
 
   const fieldErrors = state?.success === false ? (state.fieldErrors as Record<string, string> | undefined) : undefined;
-  const eligibleResidents = residents.filter((r) => r.accountStatus === "CLAIMED");
 
   return (
     <>
@@ -65,9 +64,9 @@ export function InvoiceDialog({ residents }: { residents: User[] }) {
                 }`}
               >
                 <option value="">Select a resident</option>
-                {eligibleResidents.map((r) => (
+                {residents.map((r) => (
                   <option key={r.id} value={r.id}>
-                    {r.firstName} {r.lastName} ({r.phone})
+                    {r.firstName || ""} {r.lastName || ""} ({r.phone})
                   </option>
                 ))}
               </select>
@@ -90,7 +89,7 @@ export function InvoiceDialog({ residents }: { residents: User[] }) {
                 }`}
               />
               {fieldErrors?.amount && <p className="mt-1 text-xs text-red-600">{fieldErrors.amount}</p>}
-              <p className="mt-1 text-xs text-slate-500">Amount in kobo (₦1 = 100 kobo)</p>
+              <p className="mt-1 text-xs text-slate-500">Amount in Naira (₦)</p>
             </div>
 
             <div>

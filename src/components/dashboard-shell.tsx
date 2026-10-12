@@ -66,14 +66,14 @@ function DashboardSidebar({
       <div className="absolute bottom-0 left-0 right-0 border-t border-slate-800/80 bg-slate-950/80 p-4 backdrop-blur-sm">
         <div className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/80 px-3 py-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-br from-indigo-500 to-sky-400 text-sm font-semibold text-white">
-            {user.name?.charAt(0)?.toUpperCase() ?? "U"}
+            {user.name?.charAt(0)?.toUpperCase() ?? "A"}
           </div>
           <div className="min-w-0">
             <p className="truncate text-xs font-semibold text-white">
-              {user.name ?? "Admin"}
+              {user.name || "Operations Admin"}
             </p>
             <p className="truncate text-[11px] text-slate-400">
-              {user.email ?? "admin@company.com"}
+              {user.email || "Operations Team"}
             </p>
           </div>
         </div>

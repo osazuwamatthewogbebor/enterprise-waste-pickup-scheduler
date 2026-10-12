@@ -3,7 +3,7 @@ import { getSessionUser } from "@/src/lib/with-tenant";
 import { listInvoices } from "@/src/lib/actions/v1/invoices";
 import { listResidents } from "@/src/lib/actions/v1/residents";
 import { InvoiceDialog } from "@/src/components/admin/invoice-form";
-import { PaystackPaymentDialog } from "@/src/components/admin/paystack-payment-dialog";
+import { RecordPaymentDialog } from "@/src/components/admin/record-payment-dialog";
 import { WhatsAppBillButton } from "@/src/components/admin/whatsapp-bill-button";
 
 export default async function AdminInvoicesPage() {
@@ -86,8 +86,8 @@ export default async function AdminInvoicesPage() {
                           orgName={user.name || "Waste Services"}
                           orgSlug={user.orgSlug}
                         />
-                        {(inv.status === "DRAFT" || inv.status === "SENT") && (
-                          <PaystackPaymentDialog invoice={inv} />
+                        {inv.status !== "PAID" && inv.status !== "CANCELLED" && (
+                          <RecordPaymentDialog invoice={inv} />
                         )}
                       </div>
                     </td>

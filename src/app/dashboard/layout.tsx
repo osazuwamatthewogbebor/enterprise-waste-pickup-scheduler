@@ -19,8 +19,8 @@ export default async function DashboardLayout({
   return (
     <DashboardShell
       user={{
-        name: null,
-        email: user.email,
+        name: user.name,
+        email: user.email || user.phone || `${user.orgSlug} admin`,
         role: user.role,
         orgSlug: user.orgSlug,
       }}

@@ -155,3 +155,92 @@ export async function initializePayment(_prevState: unknown, formData: FormData)
 
   return ok({ authorizationUrl: paystackData.data.authorization_url });
 }
+
+const recordManualPaymentSchema = z.object({
+  invoiceId: z.string(),
+  paymentMethod: z.enum(["CASH", "BANK_TRANSFER", "POS", "CHEQUE"]),
+  reference: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+export async function recordManualPayment(
+  _prevState: unknown,
+  formData: FormData
+): Promise<ActionResult<{ invoiceId: string; paymentId: string }>> {
+  const user = await getSessionUser();
+  if (!user) return fail("Unauthorized");
+  if (user.role !== "ADMIN") return fail("Forbidden: Only administrators can record manual payments");
+
+  const raw = {
+    invoiceId: formData.get("invoiceId"),
+    paymentMethod: formData.get("paymentMethod"),
+    reference: formData.get("reference"),
+    notes: formData.get("notes"),
+  };
+
+  const parsed = recordManualPaymentSchema.safeParse(raw);
+  if (!parsed.success) {
+    return fail("Invalid input", parsed.error.flatten().fieldErrors as Record<string, string>);
+  }
+
+  const invoice = await prisma.invoice.findFirst({
+    where: {
+      id: parsed.data.invoiceId,
+      organizationId: user.organizationId,
+    },
+    include: {
+      resident: { select: { id: true, firstName: true, lastName: true, phone: true } },
+    },
+  });
+
+  if (!invoice) return fail("Invoice not found");
+  if (invoice.status === "PAID") return fail("Invoice is already paid");
+
+  const providerRef =
+    parsed.data.reference?.trim() ||
+    `MANUAL-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+
+  const payment = await prisma.payment.create({
+    data: {
+      organizationId: user.organizationId,
+      invoiceId: invoice.id,
+      residentId: invoice.residentId,
+      provider: "BANK_TRANSFER",
+      providerRef,
+      amount: invoice.amount,
+      currency: "NGN",
+      status: "SUCCESS",
+      metadata: {
+        paymentMethod: parsed.data.paymentMethod,
+        notes: parsed.data.notes || null,
+        recordedBy: user.id,
+        recordedAt: new Date().toISOString(),
+      },
+    },
+  });
+
+  await prisma.invoice.update({
+    where: { id: invoice.id },
+    data: {
+      status: "PAID",
+      paidAt: new Date(),
+    },
+  });
+
+  await prisma.eventLog.create({
+    data: {
+      organizationId: user.organizationId,
+      type: "PAYMENT_RECEIVED",
+      payload: {
+        invoiceId: invoice.id,
+        paymentId: payment.id,
+        amount: invoice.amount,
+        method: parsed.data.paymentMethod,
+        manual: true,
+      },
+    },
+  });
+
+  return ok({ invoiceId: invoice.id, paymentId: payment.id });
+}
+

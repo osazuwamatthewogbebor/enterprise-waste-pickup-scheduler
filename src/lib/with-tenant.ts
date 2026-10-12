@@ -10,6 +10,7 @@ export type SessionUser = {
   organizationId: string;
   orgSlug: string;
   email: string | null;
+  phone: string | null;
   name: string | null;
 };
 
@@ -32,6 +33,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       organizationId: payload.organizationId as string,
       orgSlug: payload.orgSlug as string,
       email: (payload.email as string | null) ?? null,
+      phone: (payload.phone as string | null) ?? null,
       name: (payload.name as string | null) ?? null,
     };
   } catch {
