@@ -86,7 +86,12 @@ export async function importResidents(_prevState: unknown, formData: FormData): 
 
     try {
       const existing = await prisma.user.findUnique({
-        where: { phone: normalized },
+        where: {
+          organizationId_phone: {
+            organizationId: user.organizationId,
+            phone: normalized,
+          },
+        },
       });
 
       if (existing) {
@@ -98,7 +103,6 @@ export async function importResidents(_prevState: unknown, formData: FormData): 
             streetAddress: parsed.data.streetAddress ?? null,
             landmark: parsed.data.landmark ?? null,
             zoneId: resolvedZoneId ?? undefined,
-            organizationId: user.organizationId,
           },
         });
         results.updated++;
@@ -342,8 +346,15 @@ export async function createResident(
   const normalized = normalizeNigerianPhone(parsed.data.phone);
   if (!normalized) return fail("Invalid phone number");
 
-  const existing = await prisma.user.findUnique({ where: { phone: normalized } });
-  if (existing) return fail("Phone number already registered");
+  const existing = await prisma.user.findUnique({
+    where: {
+      organizationId_phone: {
+        organizationId: user.organizationId,
+        phone: normalized,
+      },
+    },
+  });
+  if (existing) return fail("Phone number already registered for this organization");
 
   const tempPassword = generateTempPassword();
 

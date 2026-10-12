@@ -88,7 +88,7 @@ export async function createRoute(_prevState: unknown, formData: FormData): Prom
 
     if (enriched.length > 0) {
       await tx.pickupStop.createMany({
-        data: enriched.map((e) => ({
+        data: enriched.map((e, idx) => ({
           routeId: newRoute.id,
           residentId: e.residentId,
           organizationId: user.organizationId,
@@ -96,7 +96,7 @@ export async function createRoute(_prevState: unknown, formData: FormData): Prom
           address: e.address,
           latitude: e.latitude,
           longitude: e.longitude,
-          stopOrder: 0,
+          stopOrder: idx + 1,
           status: "PENDING" as const,
           note: null,
           photoUrl: null,

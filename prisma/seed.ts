@@ -20,7 +20,7 @@ async function main() {
   const driverHash = await bcrypt.hash("driver1234", 10);
 
   const _admin = await prisma.user.upsert({
-    where: { phone: "+2348000000000" },
+    where: { organizationId_phone: { organizationId: org.id, phone: "+2348000000000" } },
     update: {
       email: "admin@company.com",
       passwordHash: adminHash,
@@ -43,7 +43,7 @@ async function main() {
   const driver2Phone = "+2348098765432";
 
   const driver1 = await prisma.user.upsert({
-    where: { phone: driver1Phone },
+    where: { organizationId_phone: { organizationId: org.id, phone: driver1Phone } },
     update: {},
     create: {
       organizationId: org.id,
@@ -57,7 +57,7 @@ async function main() {
   });
 
   const _driver2 = await prisma.user.upsert({
-    where: { phone: driver2Phone },
+    where: { organizationId_phone: { organizationId: org.id, phone: driver2Phone } },
     update: {},
     create: {
       organizationId: org.id,
@@ -103,7 +103,7 @@ async function main() {
 
   for (const r of residents) {
     const user = await prisma.user.upsert({
-      where: { phone: r.phone },
+      where: { organizationId_phone: { organizationId: org.id, phone: r.phone } },
       update: {},
       create: {
         organizationId: org.id,

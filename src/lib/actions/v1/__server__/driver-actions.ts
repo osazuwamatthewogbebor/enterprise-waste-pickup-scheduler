@@ -39,9 +39,14 @@ export async function createDriver(_prevState: unknown, formData: FormData): Pro
   if (!normalized) return fail("Invalid phone number");
 
   const existing = await prisma.user.findUnique({
-    where: { phone: normalized },
+    where: {
+      organizationId_phone: {
+        organizationId: user.organizationId,
+        phone: normalized,
+      },
+    },
   });
-  if (existing) return fail("A user with this phone number already exists");
+  if (existing) return fail("A driver with this phone number already exists in your organization");
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
 
@@ -222,7 +227,14 @@ export async function importDrivers(_prevState: unknown, formData: FormData): Pr
 
     try {
       const passwordHash = await bcrypt.hash(parsed.data.password, 10);
-      const existing = await prisma.user.findUnique({ where: { phone: normalized } });
+      const existing = await prisma.user.findUnique({
+        where: {
+          organizationId_phone: {
+            organizationId: user.organizationId,
+            phone: normalized,
+          },
+        },
+      });
 
       if (existing) {
         await prisma.user.update({
@@ -234,7 +246,6 @@ export async function importDrivers(_prevState: unknown, formData: FormData): Pr
             role: "DRIVER",
             accountStatus: "CLAIMED",
             zoneId: resolvedZoneId ?? null,
-            organizationId: user.organizationId,
           },
         });
         results.updated++;

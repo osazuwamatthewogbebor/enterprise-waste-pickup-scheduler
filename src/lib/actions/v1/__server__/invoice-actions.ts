@@ -58,7 +58,7 @@ export async function createInvoice(_prevState: unknown, formData: FormData): Pr
 export async function initializePayment(_prevState: unknown, formData: FormData): Promise<ActionResult<{ authorizationUrl: string }>> {
   const user = await getSessionUser();
   if (!user) return fail("Unauthorized");
-  if (user.role !== "ADMIN") return fail("Forbidden");
+  if (user.role !== "ADMIN" && user.role !== "RESIDENT") return fail("Forbidden");
 
   const verified = await requireVerifiedOrg(user);
   if (!verified.verified) {
@@ -77,8 +77,15 @@ export async function initializePayment(_prevState: unknown, formData: FormData)
   }
 
   const invoice = await prisma.invoice.findFirst({
-    where: { id: parsed.data.invoiceId, organizationId: user.organizationId },
-    include: { resident: { select: { phone: true, firstName: true, lastName: true } } },
+    where: {
+      id: parsed.data.invoiceId,
+      organizationId: user.organizationId,
+      ...(user.role === "RESIDENT" ? { residentId: user.id } : {}),
+    },
+    include: {
+      resident: { select: { id: true, phone: true, email: true, firstName: true, lastName: true } },
+      organization: { select: { slug: true } },
+    },
   });
 
   if (!invoice) return fail("Invoice not found");
@@ -87,6 +94,15 @@ export async function initializePayment(_prevState: unknown, formData: FormData)
     return fail(`Cannot initialize payment for invoice in ${invoice.status} status`);
   }
 
+  const cleanPhone = (invoice.resident?.phone || "").replace(/[^0-9]/g, "");
+  const payerEmail = invoice.resident?.email || (cleanPhone ? `${cleanPhone}@customer.wastepickup.ng` : "billing@wastepickup.ng");
+  const amountInKobo = Math.round(invoice.amount * 100);
+
+  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const callbackUrl = user.role === "RESIDENT"
+    ? `${baseUrl}/${user.orgSlug}/portal/payments?paid=true`
+    : `${baseUrl}/dashboard/admin/invoices?paid=true`;
+
   const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
     method: "POST",
     headers: {
@@ -94,14 +110,15 @@ export async function initializePayment(_prevState: unknown, formData: FormData)
       Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
     },
     body: JSON.stringify({
-      email: invoice.resident?.phone || "no-email@user.com",
-      amount: invoice.amount,
+      email: payerEmail,
+      amount: amountInKobo,
       currency: "NGN",
       metadata: {
         invoiceId: invoice.id,
         organizationId: user.organizationId,
+        residentId: invoice.residentId,
       },
-      callback_url: `${process.env.AUTH_URL}/api/webhooks/paystack`,
+      callback_url: callbackUrl,
     }),
   });
 
@@ -111,18 +128,30 @@ export async function initializePayment(_prevState: unknown, formData: FormData)
     return fail(paystackData.message || "Failed to initialize payment");
   }
 
-  await prisma.invoice.update({
-    where: { id: invoice.id },
-    data: { status: "SENT" },
-  });
-
-  await prisma.eventLog.create({
+  await prisma.payment.create({
     data: {
       organizationId: user.organizationId,
-      type: "PAYMENT_RECEIVED",
-      payload: { invoiceId: invoice.id, amount: invoice.amount },
+      invoiceId: invoice.id,
+      residentId: invoice.residentId,
+      provider: "PAYSTACK",
+      providerRef: paystackData.data.reference,
+      amount: invoice.amount,
+      currency: "NGN",
+      status: "PENDING",
+      metadata: {
+        accessCode: paystackData.data.access_code,
+        initializedBy: user.id,
+        initializedRole: user.role,
+      },
     },
   });
+
+  if (invoice.status === "DRAFT") {
+    await prisma.invoice.update({
+      where: { id: invoice.id },
+      data: { status: "SENT" },
+    });
+  }
 
   return ok({ authorizationUrl: paystackData.data.authorization_url });
 }

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { updateRouteStatus } from "@/src/lib/actions/v1/__server__/route-actions";
 import { updatePickup, uploadPickupPhoto } from "@/src/lib/actions/v1/__server__/pickup-actions";
 import { DriverMap } from "@/src/components/driver-map";
+import { watermarkProofPhoto, enqueueOfflineAction, getOfflineQueue, removeOfflineAction } from "@/src/lib/offline-sync";
 
 interface Stop {
   id: string;
@@ -34,8 +35,46 @@ export function DriverRouteDetail({ route, stops }: { route: RouteWithRelations;
   const router = useRouter();
   const [statusState, statusAction, statusPending] = useActionState(updateRouteStatus, null);
   const [pickupState, pickupAction] = useActionState(updatePickup, null);
-  const [photoState, photoAction, photoPending] = useActionState(uploadPickupPhoto, null);
+  const [photoState, photoAction] = useActionState(uploadPickupPhoto, null);
   const [activeStopId, setActiveStopId] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
+  const [offlineCount, setOfflineCount] = useState(0);
+
+  useEffect(() => {
+    setIsOffline(typeof navigator !== "undefined" ? !navigator.onLine : false);
+    setOfflineCount(getOfflineQueue().length);
+
+    const handleOnline = async () => {
+      setIsOffline(false);
+      const queue = getOfflineQueue();
+      if (queue.length === 0) return;
+      toast.info(`Syncing ${queue.length} cached pickup stops...`);
+      for (const item of queue) {
+        const fd = new FormData();
+        fd.append("stopId", item.stopId);
+        fd.append("status", item.status);
+        if (item.note) fd.append("note", item.note);
+        await updatePickup(null, fd);
+        removeOfflineAction(item.id);
+      }
+      setOfflineCount(0);
+      toast.success("Offline proof-of-service records synced to server!");
+      router.refresh();
+    };
+
+    const handleOffline = () => {
+      setIsOffline(true);
+      toast.warning("Network connection lost. Offline-first driver mode active.");
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [router]);
+
 
   useEffect(() => {
     if (statusState?.success) {
@@ -133,6 +172,16 @@ export function DriverRouteDetail({ route, stops }: { route: RouteWithRelations;
       </div>
 
       <div className="space-y-3">
+        {isOffline && (
+          <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+              <span><strong>Offline Mode:</strong> No network connection. Changes will be saved to device storage and synchronized automatically when reconnected.</span>
+            </div>
+            {offlineCount > 0 && <span className="font-semibold">{offlineCount} queued</span>}
+          </div>
+        )}
+
         <h2 className="text-sm font-medium text-slate-700">
           Stops ({pendingStops.length} pending, {stops.length} total)
         </h2>
@@ -146,9 +195,9 @@ export function DriverRouteDetail({ route, stops }: { route: RouteWithRelations;
               stop={stop}
               pickupAction={pickupAction}
               photoAction={photoAction}
-              photoPending={photoPending}
               activeStopId={activeStopId}
               setActiveStopId={setActiveStopId}
+              onOfflineQueue={() => setOfflineCount(getOfflineQueue().length)}
             />
           ))
         )}
@@ -161,28 +210,85 @@ function StopCard({
   stop,
   pickupAction,
   photoAction,
-  photoPending,
   activeStopId,
   setActiveStopId,
+  onOfflineQueue,
 }: {
   stop: Stop;
   pickupAction: (formData: FormData) => void;
   photoAction: (formData: FormData) => void;
-  photoPending: boolean;
   activeStopId: string | null;
   setActiveStopId: (id: string | null) => void;
+  onOfflineQueue?: () => void;
 }) {
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [localStatus, setLocalStatus] = useState<string | null>(null);
+
+  const displayStatus = localStatus || stop.status;
   const statusColor =
-    stop.status === "COMPLETED"
+    displayStatus === "COMPLETED"
       ? "bg-emerald-100 text-emerald-700"
-      : stop.status === "MISSED"
+      : displayStatus === "MISSED"
       ? "bg-red-100 text-red-700"
       : "bg-amber-100 text-amber-700";
+
+  const handleStatus = (status: "COMPLETED" | "MISSED") => {
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      enqueueOfflineAction({
+        stopId: stop.id,
+        status,
+        latitude: stop.latitude ?? undefined,
+        longitude: stop.longitude ?? undefined,
+        note: "Offline proof recorded",
+      });
+      setLocalStatus(status);
+      onOfflineQueue?.();
+      toast.info(`Offline: Stop marked ${status}. Will sync automatically when connected.`);
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("stopId", stop.id);
+    formData.append("status", status);
+    pickupAction(formData);
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setActiveStopId(stop.id);
+    setPhotoUploading(true);
+
+    try {
+      const watermarkedBlob = await watermarkProofPhoto(file, {
+        address: stop.address,
+        latitude: stop.latitude,
+        longitude: stop.longitude,
+      });
+
+      const watermarkedFile = new File([watermarkedBlob], `proof-${stop.id}.jpg`, {
+        type: "image/jpeg",
+      });
+
+      const formData = new FormData();
+      formData.append("stopId", stop.id);
+      formData.append("photo", watermarkedFile);
+      photoAction(formData);
+    } catch {
+      const formData = new FormData();
+      formData.append("stopId", stop.id);
+      formData.append("photo", file);
+      photoAction(formData);
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
 
   return (
     <div
       className={`rounded-xl border border-slate-200 bg-white p-4 ${
-        stop.status === "PENDING" ? "border-l-4 border-l-blue-500" : ""
+        displayStatus === "PENDING" ? "border-l-4 border-l-blue-500" : ""
       }`}
     >
       <div className="flex items-start justify-between">
@@ -192,7 +298,7 @@ function StopCard({
           </div>
           <div>
             <span className={`mb-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusColor}`}>
-              {stop.status}
+              {displayStatus}
             </span>
             <p className="mt-1 text-sm font-medium text-slate-900">{stop.address}</p>
             {stop.resident && (
@@ -211,49 +317,40 @@ function StopCard({
         )}
       </div>
 
-      {stop.status === "PENDING" && (
+      {displayStatus === "PENDING" && (
         <div className="mt-3 space-y-2">
-          <form action={photoAction}>
-            <input type="hidden" name="stopId" value={stop.id} />
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            <label className="cursor-pointer inline-flex items-center gap-1 rounded bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-200">
+              📸 Take GPS Proof Photo
               <input
                 type="file"
                 name="photo"
                 accept="image/*"
                 capture="environment"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  setActiveStopId(stop.id);
-                  e.target.form?.requestSubmit();
-                }}
-                className="text-xs text-slate-600"
+                onChange={handlePhotoUpload}
+                className="hidden"
               />
-              {photoPending && activeStopId === stop.id && <span className="text-xs text-slate-500">Uploading...</span>}
-            </div>
-          </form>
+            </label>
+            {(photoUploading || activeStopId === stop.id) && (
+              <span className="text-xs text-slate-500">Watermarking & uploading...</span>
+            )}
+          </div>
 
           <div className="flex gap-2">
-            <form action={pickupAction}>
-              <input type="hidden" name="stopId" value={stop.id} />
-              <input type="hidden" name="status" value="COMPLETED" />
-              <button
-                type="submit"
-                className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-              >
-                Mark Complete
-              </button>
-            </form>
-            <form action={pickupAction}>
-              <input type="hidden" name="stopId" value={stop.id} />
-              <input type="hidden" name="status" value="MISSED" />
-              <button
-                type="submit"
-                className="flex-1 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
-              >
-                Mark Missed
-              </button>
-            </form>
+            <button
+              type="button"
+              onClick={() => handleStatus("COMPLETED")}
+              className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+            >
+              Mark Complete
+            </button>
+            <button
+              type="button"
+              onClick={() => handleStatus("MISSED")}
+              className="flex-1 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
+            >
+              Mark Missed
+            </button>
           </div>
         </div>
       )}

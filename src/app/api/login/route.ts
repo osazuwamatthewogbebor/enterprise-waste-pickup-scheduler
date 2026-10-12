@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
   if (!user && /^\+?\d+$/.test(input)) {
     const normalized = input.startsWith("+") ? input : `+234${input.replace(/^0+/, "")}`;
-    user = await prisma.user.findUnique({
+    user = await prisma.user.findFirst({
       where: { phone: normalized },
       include: { organization: true },
     });

@@ -20,8 +20,14 @@ async function nominatimQuery(address: string): Promise<Coordinates | null> {
   }
 }
 
+const geocodeCache = new Map<string, Coordinates | null>();
+
 export async function geocodeAddress(address: string): Promise<Coordinates | null> {
   if (!address || address === "Unknown address") return null;
+  const key = address.toLowerCase().trim();
+  if (geocodeCache.has(key)) {
+    return geocodeCache.get(key) ?? null;
+  }
 
   const attempts: string[] = [address, `${address}, Nigeria`];
   const stripped = address.replace(/^((plot|no\.?)\s+\d+\s+)/i, "").trim();
@@ -29,7 +35,12 @@ export async function geocodeAddress(address: string): Promise<Coordinates | nul
 
   for (const q of attempts) {
     const coords = await nominatimQuery(q);
-    if (coords) return coords;
+    if (coords) {
+      geocodeCache.set(key, coords);
+      return coords;
+    }
   }
+
+  geocodeCache.set(key, null);
   return null;
 }

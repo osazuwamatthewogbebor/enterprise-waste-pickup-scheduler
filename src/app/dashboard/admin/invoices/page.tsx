@@ -4,6 +4,7 @@ import { listInvoices } from "@/src/lib/actions/v1/invoices";
 import { listResidents } from "@/src/lib/actions/v1/residents";
 import { InvoiceDialog } from "@/src/components/admin/invoice-form";
 import { PaystackPaymentDialog } from "@/src/components/admin/paystack-payment-dialog";
+import { WhatsAppBillButton } from "@/src/components/admin/whatsapp-bill-button";
 
 export default async function AdminInvoicesPage() {
   const user = await getSessionUser();
@@ -56,7 +57,7 @@ export default async function AdminInvoicesPage() {
                       })()}
                     </td>
                     <td className="px-4 py-3 text-right text-sm text-slate-900">
-                      ₦{(inv.amount / 100).toLocaleString("en-NG")}
+                      ₦{Number(inv.amount).toLocaleString("en-NG")}
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -79,9 +80,16 @@ export default async function AdminInvoicesPage() {
                       {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString("en-NG") : "—"}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      {(inv.status === "DRAFT" || inv.status === "SENT") && (
-                        <PaystackPaymentDialog invoice={inv} />
-                      )}
+                      <div className="flex items-center justify-center gap-2">
+                        <WhatsAppBillButton
+                          invoice={inv}
+                          orgName={user.name || "Waste Services"}
+                          orgSlug={user.orgSlug}
+                        />
+                        {(inv.status === "DRAFT" || inv.status === "SENT") && (
+                          <PaystackPaymentDialog invoice={inv} />
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))

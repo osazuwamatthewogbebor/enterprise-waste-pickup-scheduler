@@ -53,7 +53,7 @@ export function PaystackPaymentDialog({ invoice }: { invoice: Invoice }) {
             </p>
             <p>
               <span className="font-medium text-slate-700">Amount:</span>{" "}
-              ₦{(invoice.amount / 100).toLocaleString("en-NG")}
+              ₦{Number(invoice.amount).toLocaleString("en-NG")}
             </p>
             <p className="text-slate-600">
               You will be redirected to Paystack to complete the payment for this invoice.

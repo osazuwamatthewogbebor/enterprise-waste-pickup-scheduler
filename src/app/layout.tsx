@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { DM_Sans, Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
+import { PwaRegister } from "@/src/components/pwa-register";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" });
@@ -9,6 +10,7 @@ const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" });
 export const metadata: Metadata = {
   title: "Waste Pickup Scheduler",
   description: "B2B2C waste management operations platform",
+  manifest: "/manifest.json",
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },
@@ -34,8 +36,10 @@ export default function RootLayout({
       <head />
       <body>
         {children}
+        <PwaRegister />
         <Toaster position="top-right" richColors />
       </body>
     </html>
   );
 }
+

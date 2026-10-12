@@ -2,10 +2,27 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
-const PUBLIC_ROUTES = ["/", "/login", "/signup", "/api", "/_next", "/favicon.ico", "/features", "/pricing", "/careers", "/about", "/contact", "/privacy-policy", "/terms-of-service"];
+const EXACT_PUBLIC_ROUTES = new Set([
+  "/",
+  "/login",
+  "/signup",
+  "/request",
+  "/features",
+  "/pricing",
+  "/careers",
+  "/about",
+  "/contact",
+  "/privacy-policy",
+  "/terms-of-service",
+  "/favicon.ico",
+]);
 
-const isPublicRoute = (pathname: string) =>
-  PUBLIC_ROUTES.some((route) => pathname === route || pathname.startsWith(route));
+const PUBLIC_PREFIXES = ["/api/", "/_next/"];
+
+const isPublicRoute = (pathname: string) => {
+  if (EXACT_PUBLIC_ROUTES.has(pathname)) return true;
+  return PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+};
 
 const isResidentLogin = (pathname: string) => /^\/[^\/]+\/login$/.test(pathname);
 

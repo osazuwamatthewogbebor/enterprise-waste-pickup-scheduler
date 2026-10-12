@@ -23,10 +23,32 @@ export async function POST(request: Request) {
   const event = JSON.parse(body);
 
   if (event.event === "charge.success") {
-    const payment = await prisma.payment.findFirst({
+    let payment = await prisma.payment.findFirst({
       where: { providerRef: event.data.reference },
       include: { invoice: true },
     });
+
+    if (!payment && event.data.metadata?.invoiceId) {
+      const invoice = await prisma.invoice.findUnique({
+        where: { id: event.data.metadata.invoiceId },
+      });
+      if (invoice) {
+        payment = await prisma.payment.create({
+          data: {
+            organizationId: invoice.organizationId,
+            invoiceId: invoice.id,
+            residentId: invoice.residentId,
+            provider: "PAYSTACK",
+            providerRef: event.data.reference,
+            amount: invoice.amount,
+            currency: "NGN",
+            status: "PENDING",
+            metadata: event.data,
+          },
+          include: { invoice: true },
+        });
+      }
+    }
 
     if (payment) {
       await prisma.payment.update({
