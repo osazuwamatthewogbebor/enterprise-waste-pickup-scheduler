@@ -303,7 +303,13 @@ function StopCard({
             <p className="mt-1 text-sm font-medium text-slate-900">{stop.address}</p>
             {stop.resident && (
               <p className="text-xs text-slate-500">
-                {stop.resident.firstName} {stop.resident.lastName} · {stop.resident.phone}
+                {stop.resident.firstName} {stop.resident.lastName} ·{" "}
+                <a
+                  href={`tel:${stop.resident.phone}`}
+                  className="font-medium text-blue-600 hover:underline"
+                >
+                  📞 {stop.resident.phone}
+                </a>
               </p>
             )}
             {stop.needsReview && (
