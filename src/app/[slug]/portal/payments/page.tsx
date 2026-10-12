@@ -5,6 +5,7 @@ import { listResidentInvoices } from "@/src/lib/actions/v1/invoices";
 import { ResidentPayButton } from "@/src/components/resident/resident-pay-button";
 import { getResidentVirtualAccount } from "@/src/lib/virtual-accounts";
 import { generateCompliancePass } from "@/src/lib/compliance";
+import { CopyAccountButton } from "@/src/components/resident/copy-account-button";
 
 export default async function ResidentPortalPaymentsPage({
   params,
@@ -71,39 +72,47 @@ export default async function ResidentPortalPaymentsPage({
       {/* Top Section: Dedicated Virtual Account & Compliance Pass */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Dedicated NUBAN Virtual Account */}
-        <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-900 to-slate-900 p-6 text-white shadow-md relative overflow-hidden">
-          <div className="absolute top-0 right-0 -mr-6 -mt-6 h-32 w-32 rounded-full bg-blue-500/10 blur-2xl" />
-          
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-blue-300">
-              Dedicated Virtual Bank Account
-            </span>
-            <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-medium text-emerald-300">
-              Instant Auto-Clearance
-            </span>
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Dedicated Virtual Bank Account
+              </span>
+              <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                Instant Auto-Clearance
+              </span>
+            </div>
+
+            <p className="mt-3 text-xs text-slate-600">
+              Transfer directly from any Nigerian banking app (OPay, GTBank, Kuda, PalmPay) to instantly credit your account:
+            </p>
+
+            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/80 p-4 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500">Bank Name</span>
+                <span className="text-sm font-semibold text-slate-900">{virtualAccount.bankName}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500">Account Number</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-mono font-bold text-slate-900 tracking-wider">
+                    {virtualAccount.accountNumber}
+                  </span>
+                  <CopyAccountButton accountNumber={virtualAccount.accountNumber} />
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500">Account Name</span>
+                <span className="text-xs font-medium text-slate-700 truncate max-w-[220px]" title={virtualAccount.accountName}>
+                  {virtualAccount.accountName}
+                </span>
+              </div>
+            </div>
           </div>
 
-          <p className="mt-3 text-xs text-slate-300">
-            Transfer directly from any Nigerian banking app (OPay, GTBank, Kuda, PalmPay) to instantly credit your account:
-          </p>
-
-          <div className="mt-4 rounded-xl bg-white/10 p-4 backdrop-blur-xs border border-white/10 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400">Bank Name</span>
-              <span className="text-sm font-semibold text-white">{virtualAccount.bankName}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400">Account Number</span>
-              <span className="text-lg font-mono font-bold text-amber-300 tracking-wider">
-                {virtualAccount.accountNumber}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400">Account Name</span>
-              <span className="text-xs font-medium text-slate-200 truncate max-w-[200px]">
-                {virtualAccount.accountName}
-              </span>
-            </div>
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+            <span>Direct NUBAN Settlement</span>
+            <span className="text-emerald-600 font-medium">Automatic Matching</span>
           </div>
         </div>
 

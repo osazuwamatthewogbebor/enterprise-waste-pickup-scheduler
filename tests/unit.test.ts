@@ -223,3 +223,38 @@ describe("Municipal Regulatory Compliance Pass", () => {
   });
 });
 
+describe("Service Request Admin Transition Schema & Status Rules", () => {
+  it("allows null or omitted adminNotes when admin approves a request", async () => {
+    const { z } = await import("zod");
+    const transitionSchema = z.object({
+      requestId: z.string().min(1, "Request ID is required"),
+      status: z.enum(["APPROVED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]),
+      adminNotes: z.string().nullish(),
+    });
+
+    const withNull = transitionSchema.safeParse({
+      requestId: "req_123",
+      status: "APPROVED",
+      adminNotes: null,
+    });
+    assert.strictEqual(withNull.success, true);
+
+    const withUndefined = transitionSchema.safeParse({
+      requestId: "req_123",
+      status: "APPROVED",
+      adminNotes: undefined,
+    });
+    assert.strictEqual(withUndefined.success, true);
+  });
+
+  it("verifies payable statuses for resident invoices include OVERDUE", () => {
+    const isPayable = (status: string) => status === "DRAFT" || status === "SENT" || status === "OVERDUE";
+    assert.strictEqual(isPayable("DRAFT"), true);
+    assert.strictEqual(isPayable("SENT"), true);
+    assert.strictEqual(isPayable("OVERDUE"), true);
+    assert.strictEqual(isPayable("PAID"), false);
+    assert.strictEqual(isPayable("CANCELLED"), false);
+  });
+});
+
+

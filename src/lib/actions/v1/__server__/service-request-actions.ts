@@ -4,12 +4,13 @@ import prisma from "@/src/lib/prisma";
 import { getSessionUser, requireVerifiedOrg } from "@/src/lib/with-tenant";
 import { ok, fail } from "@/src/lib/result";
 import type { ActionResult } from "@/src/lib/result";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 const transitionSchema = z.object({
-  requestId: z.string(),
+  requestId: z.string().min(1, "Request ID is required"),
   status: z.enum(["APPROVED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]),
-  adminNotes: z.string().optional(),
+  adminNotes: z.string().nullish(),
 });
 
 const validTransitions: Record<string, string[]> = {
@@ -26,7 +27,10 @@ export async function transitionServiceRequest(_prevState: unknown, formData: Fo
   if (user.role !== "ADMIN") return fail("Forbidden");
 
   const verified = await requireVerifiedOrg(user);
-  if (!verified.verified) {
+  if (verified.status === "SUSPENDED") {
+    return fail("Organization is suspended; service request processing is locked");
+  }
+  if (!verified.verified && process.env.NODE_ENV === "production") {
     return fail(
       `Organization is ${verified.status.replace("_", " ").toLowerCase()}; service request processing is locked pending verification`
     );
@@ -35,7 +39,7 @@ export async function transitionServiceRequest(_prevState: unknown, formData: Fo
   const raw = {
     requestId: formData.get("requestId"),
     status: formData.get("status"),
-    adminNotes: formData.get("adminNotes"),
+    adminNotes: formData.get("adminNotes") || undefined,
   };
 
   const parsed = transitionSchema.safeParse(raw);
@@ -61,6 +65,9 @@ export async function transitionServiceRequest(_prevState: unknown, formData: Fo
       adminNotes: parsed.data.adminNotes ?? request.adminNotes ?? null,
     },
   });
+
+  revalidatePath("/dashboard/admin/service-requests");
+  revalidatePath("/dashboard/admin");
 
   return ok(updated);
 }

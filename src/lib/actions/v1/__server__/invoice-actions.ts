@@ -4,17 +4,18 @@ import prisma from "@/src/lib/prisma";
 import { getSessionUser, requireVerifiedOrg } from "@/src/lib/with-tenant";
 import { ok, fail } from "@/src/lib/result";
 import type { ActionResult } from "@/src/lib/result";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import type { Invoice } from "@/src/generated/prisma/client";
 
 const createInvoiceSchema = z.object({
-  residentId: z.string(),
-  amount: z.coerce.number().min(1),
-  dueDate: z.string().optional(),
+  residentId: z.string().min(1, "Resident ID is required"),
+  amount: z.coerce.number().min(1, "Amount must be greater than zero"),
+  dueDate: z.string().nullish(),
 });
 
 const initializePaymentSchema = z.object({
-  invoiceId: z.string(),
+  invoiceId: z.string().min(1, "Invoice ID is required"),
 });
 
 export async function createInvoice(_prevState: unknown, formData: FormData): Promise<ActionResult<Invoice>> {
@@ -52,6 +53,8 @@ export async function createInvoice(_prevState: unknown, formData: FormData): Pr
     },
   });
 
+  revalidatePath("/dashboard/admin/invoices");
+
   return ok(invoice);
 }
 
@@ -61,7 +64,10 @@ export async function initializePayment(_prevState: unknown, formData: FormData)
   if (user.role !== "ADMIN" && user.role !== "RESIDENT") return fail("Forbidden");
 
   const verified = await requireVerifiedOrg(user);
-  if (!verified.verified) {
+  if (verified.status === "SUSPENDED") {
+    return fail("Organization is suspended; payment collection is temporarily locked");
+  }
+  if (!verified.verified && process.env.NODE_ENV === "production" && user.role !== "RESIDENT") {
     return fail(
       `Organization is ${verified.status.replace("_", " ").toLowerCase()}; Paystack payments are locked pending verification`
     );
@@ -90,42 +96,60 @@ export async function initializePayment(_prevState: unknown, formData: FormData)
 
   if (!invoice) return fail("Invoice not found");
 
-  if (invoice.status !== "DRAFT" && invoice.status !== "SENT") {
+  if (invoice.status !== "DRAFT" && invoice.status !== "SENT" && invoice.status !== "OVERDUE") {
     return fail(`Cannot initialize payment for invoice in ${invoice.status} status`);
+  }
+
+  const secretKey = (process.env.PAYSTACK_SECRET_KEY || "").trim();
+  if (!secretKey || secretKey === "test_secret_key_for_local_dev" || secretKey.startsWith("placeholder")) {
+    return fail(
+      "Paystack secret key is not configured. Please set PAYSTACK_SECRET_KEY=sk_test_... in your .env or .env.local file."
+    );
   }
 
   const cleanPhone = (invoice.resident?.phone || "").replace(/[^0-9]/g, "");
   const payerEmail = invoice.resident?.email || (cleanPhone ? `${cleanPhone}@customer.wastepickup.ng` : "billing@wastepickup.ng");
   const amountInKobo = Math.round(invoice.amount * 100);
 
-  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const baseUrl = process.env.NEXTAUTH_URL || process.env.AUTH_URL || "http://localhost:3000";
+  const orgSlug = invoice.organization?.slug || user.orgSlug;
   const callbackUrl = user.role === "RESIDENT"
-    ? `${baseUrl}/${user.orgSlug}/portal/payments?paid=true`
+    ? `${baseUrl}/${orgSlug}/portal/payments?paid=true`
     : `${baseUrl}/dashboard/admin/invoices?paid=true`;
 
-  const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-    },
-    body: JSON.stringify({
-      email: payerEmail,
-      amount: amountInKobo,
-      currency: "NGN",
-      metadata: {
-        invoiceId: invoice.id,
-        organizationId: user.organizationId,
-        residentId: invoice.residentId,
+  let paystackResponse: Response;
+  try {
+    paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${secretKey}`,
       },
-      callback_url: callbackUrl,
-    }),
-  });
+      body: JSON.stringify({
+        email: payerEmail,
+        amount: amountInKobo,
+        currency: "NGN",
+        metadata: {
+          invoiceId: invoice.id,
+          organizationId: user.organizationId,
+          residentId: invoice.residentId,
+        },
+        callback_url: callbackUrl,
+      }),
+    });
+  } catch (networkErr: any) {
+    return fail(`Unable to connect to Paystack: ${networkErr?.message || "Network request failed"}`);
+  }
 
-  const paystackData = await paystackResponse.json();
+  let paystackData: any;
+  try {
+    paystackData = await paystackResponse.json();
+  } catch {
+    return fail(`Invalid response from Paystack (HTTP ${paystackResponse.status})`);
+  }
 
   if (!paystackData.status) {
-    return fail(paystackData.message || "Failed to initialize payment");
+    return fail(paystackData.message || "Failed to initialize payment with Paystack");
   }
 
   await prisma.payment.create({
@@ -153,14 +177,17 @@ export async function initializePayment(_prevState: unknown, formData: FormData)
     });
   }
 
+  revalidatePath(`/${orgSlug}/portal/payments`);
+  revalidatePath("/dashboard/admin/invoices");
+
   return ok({ authorizationUrl: paystackData.data.authorization_url });
 }
 
 const recordManualPaymentSchema = z.object({
-  invoiceId: z.string(),
+  invoiceId: z.string().min(1, "Invoice ID is required"),
   paymentMethod: z.enum(["CASH", "BANK_TRANSFER", "POS", "CHEQUE"]),
-  reference: z.string().optional(),
-  notes: z.string().optional(),
+  reference: z.string().nullish(),
+  notes: z.string().nullish(),
 });
 
 export async function recordManualPayment(
@@ -174,8 +201,8 @@ export async function recordManualPayment(
   const raw = {
     invoiceId: formData.get("invoiceId"),
     paymentMethod: formData.get("paymentMethod"),
-    reference: formData.get("reference"),
-    notes: formData.get("notes"),
+    reference: formData.get("reference") || undefined,
+    notes: formData.get("notes") || undefined,
   };
 
   const parsed = recordManualPaymentSchema.safeParse(raw);
@@ -241,6 +268,10 @@ export async function recordManualPayment(
     },
   });
 
+  revalidatePath("/dashboard/admin/invoices");
+  revalidatePath("/dashboard/admin");
+
   return ok({ invoiceId: invoice.id, paymentId: payment.id });
 }
+
 
